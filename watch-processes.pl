@@ -56,6 +56,7 @@ $o{delay}   ||= 1;
 
 =back
 =cut
+
 open my $logfh, '>', $o{logfile} or die "Couldnt' open logfile '$o{logfile}': $!";
 my $headt;
 while (1) {
