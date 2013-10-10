@@ -52,8 +52,6 @@ $o{delay}   ||= 1;
 =item verbose - be verbose or not
 =cut
 =item alarm - sound a system bell alarm when an offending process is seen
-=cut
-
 =back
 =cut
 
