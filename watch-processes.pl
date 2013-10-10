@@ -102,6 +102,7 @@ while (1) {
 			}
 		}
 		$values[$i] = join(' ',@cmda);
+		die "failed to get correct values, got '@values'" if @headf != @values;
 		@info{@headf} = @values;
 		if ($o{ignore_users} and $info{USER} =~ $o{ignore_users}) {
 			whisper("ignoring process from user $info{USER} because of rule $o{ignore_users}");
