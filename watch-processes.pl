@@ -28,10 +28,14 @@ my $result = GetOptions(
 		"mem_min|mm=i",
 		"delay|de=i",
 		"proc|p=s",
+		"ignore_users=s",
+		"ignore_procs=s",
 		"logfile|l=s",
 		"verbose|v!",
+		"debug|d!",
 		"alarm|a!",	
 );
+die 'bad parameters, check perldoc' if not $result;
 
 =item logfile - the name of the file to log to, default procwatch.log (will be overwritten)
 =cut
@@ -46,6 +50,9 @@ $o{cpu_min} ||= 20;
 =item mem_min - the minimum memory usage to trigger logging
 =cut
 $o{mem_min} ||= 20;
+=item ignore_users - (regex) ignore users who's usernmae matches the given regex
+=cut
+$o{ignore_users} = qr/$o{ignore_users}/ if $o{ignore_users};
 =item delay - (seconds) delay between checks
 =cut
 $o{delay}   ||= 1;
@@ -96,6 +103,18 @@ while (1) {
 		}
 		$values[$i] = join(' ',@cmda);
 		@info{@headf} = @values;
+		if ($o{ignore_users} and $info{USER} =~ $o{ignore_users}) {
+			whisper("ignoring process from user $info{USER} because of rule $o{ignore_users}");
+			next;
+		}
+		if ($o{proc} and $info{COMMAND} !~ $o{proc}) {
+			whisper("ignoring process $info{COMMAND}, does not match regex $o{proc}");
+			next;
+		}
+		if ($o{ignore_procs} and $info{COMMAND} =~ $o{ignore_procs}) {
+			whisper("ignoring process $info{COMMAND}, matches ignore_proces regex $o{ignore_procs}");
+			next;
+		}
 		#$info{$headf[$i]} =~ s/^\s//;
 
 		# if the cpu or ram was over the threshold, log it
@@ -112,18 +131,18 @@ while (1) {
 }
 close $logfh;
 
-sub whisper { print $_[0] if $o{debug}; }
-sub mutter  { print $_[0] if $o{verbose}; }
+sub whisper { print "$_[0]\n" if $o{debug}; }
+sub mutter  { print "$_[0]\n" if $o{verbose}; }
 
 =head1 EXAMPLE
 
 It's a lot less noisy than top.
 
-$ ./watch-processes.pl --verbose --cpu_min 10 --delay 3
-UNIXTIME	USER	PID	%CPU	%MEM	VSZ	RSS	TT	STAT	STARTED	TIME	COMMAND
-1381428720	bgmyrek	163	59.8	2.6	4113436	434500	??	R	Wed08AM	30:01.56	/Applications/Mail.app/Contents/MacOS/Mail -psn_0_53261
-1381428738	bgmyrek	161	40.4	4.7	3350764	792380	??	S	Wed08AM	43:46.19	/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal -psn_0_45067
-...
+ $ ./watch-processes.pl --verbose --cpu_min 10 --delay 3
+ UNIXTIME	USER	PID	%CPU	%MEM	VSZ	RSS	TT	STAT	STARTED	TIME	COMMAND
+ 1381428720	bgmyrek	163	59.8	2.6	4113436	434500	??	R	Wed08AM	30:01.56	/Applications/Mail.app/Contents/MacOS/Mail -psn_0_53261
+ 1381428738	bgmyrek	161	40.4	4.7	3350764	792380	??	S	Wed08AM	43:46.19	/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal -psn_0_45067
+ ...
 
 And it's tab separated, so it's easy to make a graph with the data in openoffice.
 
