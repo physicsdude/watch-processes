@@ -46,10 +46,10 @@ $o{proc}    ||= '.*';
 $o{proc}      = qr/$o{proc}/;
 =item cpu_min - the minimum cpu usage for one process to trigger logging
 =cut
-$o{cpu_min} ||= 20;
+$o{cpu_min} = defined $o{cpu_min} ? $o{cpu_min} : 20;
 =item mem_min - the minimum memory usage to trigger logging
 =cut
-$o{mem_min} ||= 20;
+$o{mem_min} = defined $o{mem_min} ? $o{mem_min} : 20;
 =item ignore_users - (regex) ignore users who's usernmae matches the given regex
 =cut
 $o{ignore_users} = qr/$o{ignore_users}/ if $o{ignore_users};
@@ -80,6 +80,7 @@ while (1) {
 		print $logfh $headt;
 		mutter($headt);
 	}
+	LINE:
 	foreach my $line (@res) {
 # USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
 #USER             PID  %CPU %MEM      VSZ    RSS   TT  STAT STARTED      TIME COMMAND
@@ -106,20 +107,20 @@ while (1) {
 		@info{@headf} = @values;
 		if ($o{ignore_users} and $info{USER} =~ $o{ignore_users}) {
 			whisper("ignoring process from user $info{USER} because of rule $o{ignore_users}");
-			next;
+			next LINE;
 		}
 		if ($o{proc} and $info{COMMAND} !~ $o{proc}) {
 			whisper("ignoring process $info{COMMAND}, does not match regex $o{proc}");
-			next;
+			next LINE;
 		}
 		if ($o{ignore_procs} and $info{COMMAND} =~ $o{ignore_procs}) {
 			whisper("ignoring process $info{COMMAND}, matches ignore_proces regex $o{ignore_procs}");
-			next;
+			next LINE;
 		}
 		#$info{$headf[$i]} =~ s/^\s//;
 
 		# if the cpu or ram was over the threshold, log it
-		if ($info{'%MEM'} > $o{mem_min} or $info{'%CPU'} > $o{cpu_min}) {
+		if (int($info{'%MEM'}) > int($o{mem_min}) or int($info{'%CPU'}) > int($o{cpu_min})) {
 			#my $logline = "\"$unixtime\",\"".join('","',@values).'"'."\n";
 			my $logline = "$unixtime\t".join("\t",@values)."\n";
 			mutter($logline);
